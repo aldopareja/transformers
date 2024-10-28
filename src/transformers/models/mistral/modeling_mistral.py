@@ -152,10 +152,11 @@ class MistralMLP(nn.Module):
         self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
         self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
+        self.dropout = nn.Dropout(config.attention_dropout)
         self.act_fn = ACT2FN[config.hidden_act]
 
     def forward(self, hidden_state):
-        return self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state))
+        return self.dropout(self.down_proj(self.act_fn(self.gate_proj(hidden_state)) * self.up_proj(hidden_state)))
 
 
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
@@ -261,6 +262,8 @@ class MistralAttention(nn.Module):
 
         attn_output = attn_output.view(bsz, q_len, -1)
         attn_output = self.o_proj(attn_output)
+
+        attn_output = nn.functional.dropout(attn_output, p=self.attention_dropout, training=self.training)
 
         if not output_attentions:
             attn_weights = None
@@ -762,6 +765,7 @@ class MistralModel(MistralPreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
+            inputs_embeds = nn.functional.dropout(inputs_embeds, p=self.attention_dropout, training=self.training)
 
         # kept for BC (non `Cache` `past_key_values` inputs)
         return_legacy_cache = False
