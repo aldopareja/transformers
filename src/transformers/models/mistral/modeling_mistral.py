@@ -765,7 +765,7 @@ class MistralModel(MistralPreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
-            inputs_embeds = nn.functional.dropout(inputs_embeds, p=self.attention_dropout, training=self.training)
+            inputs_embeds = nn.functional.dropout(inputs_embeds, p=0.1, training=self.training)
 
         # kept for BC (non `Cache` `past_key_values` inputs)
         return_legacy_cache = False
